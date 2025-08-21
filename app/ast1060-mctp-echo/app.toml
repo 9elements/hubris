@@ -6,7 +6,7 @@ stacksize = 1024
 
 [kernel]
 name = "ast1060-starter"
-requires = {flash = 20000, ram = 3072}
+requires = {flash = 32000, ram = 3072}
 
 [tasks.jefe]
 name = "task-jefe"

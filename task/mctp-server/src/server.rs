@@ -1,3 +1,8 @@
+use core::{
+    cell::{OnceCell, RefCell},
+    sync::atomic::AtomicBool,
+};
+
 use crate::ipc::*;
 
 pub struct Server;
@@ -22,7 +27,7 @@ impl crate::ipc::InOrderMCTPImpl for Server {
     where
         ServerError: idol_runtime::IHaveConsideredServerDeathWithThisErrorType,
     {
-        todo!()
+        Ok(GenericHandle(211))
     }
 
     fn get_eid(
@@ -40,7 +45,7 @@ impl crate::ipc::InOrderMCTPImpl for Server {
     where
         ServerError: idol_runtime::IHaveConsideredServerDeathWithThisErrorType,
     {
-        todo!()
+        Ok(())
     }
 
     fn recv(
@@ -52,7 +57,24 @@ impl crate::ipc::InOrderMCTPImpl for Server {
     where
         ServerError: idol_runtime::IHaveConsideredServerDeathWithThisErrorType,
     {
-        todo!()
+        static GOT_RESPONSE: AtomicBool = AtomicBool::new(false);
+        if GOT_RESPONSE.load(core::sync::atomic::Ordering::Relaxed) == false {
+            let hello_world = "Hello World".as_bytes();
+            buf.write_range(0..hello_world.len(), hello_world);
+            GOT_RESPONSE.store(true, core::sync::atomic::Ordering::Relaxed);
+            return Ok(RecvMetadata {
+                msg_typ: 1,
+                msg_ic: false,
+                msg_tag: 2,
+                remote_eid: 42,
+                size: buf.len() as u64,
+                resp_handle: Some(GenericHandle(1)),
+            });
+        } else {
+            loop {
+                // Do nothing
+            }
+        }
     }
 
     fn send(
@@ -67,7 +89,7 @@ impl crate::ipc::InOrderMCTPImpl for Server {
     where
         ServerError: idol_runtime::IHaveConsideredServerDeathWithThisErrorType,
     {
-        todo!()
+        Ok(0)
     }
 }
 
