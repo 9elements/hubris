@@ -29,7 +29,7 @@ priority = 2
 max-sizes = {flash = 8192, ram = 4096}
 start = true
 stacksize = 2048
-task-slots = ["mctp_server"]
+task-slots = ["mctp_server", "uart_driver"]
 
 [tasks.mctp_server]
 name = "mctp-server"
@@ -37,4 +37,13 @@ priority = 1
 max-sizes = {flash = 8192, ram = 8192}
 start = true
 stacksize = 4096
+
+[tasks.uart_driver]
+name = "drv-ast1060-uart"
+priority = 1
+max-sizes = {flash = 8192, ram = 2048}
+uses = ["uart"]
+start = true
+notifications = ["uart-irq"]
+interrupts = {"uart.irq" = "uart-irq"}
 

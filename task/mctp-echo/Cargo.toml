@@ -7,11 +7,6 @@ edition = "2021"
 userlib = { path = "../../sys/userlib", features = ["panic-messages"] }
 mctp-api = { path = "../mctp-api" }
 mctp = { version = "0.2.0", default-features = false }
-aspeed-ddk = { git = "https://github.com/AspeedTech-BMC/aspeed-rust.git" }
-ast1060-pac = { git = "https://github.com/AspeedTech-BMC/ast1060-pac.git", features = ["rt"] }
-cortex-m.workspace = true
-embedded-hal = "1"
-embedded-io = "0.6.1"
 
 # This section is here to discourage RLS/rust-analyzer from doing test builds,
 # since test builds don't work for cross compilation.

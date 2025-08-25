@@ -59,7 +59,7 @@ impl crate::ipc::InOrderMCTPImpl for Server {
     {
         static GOT_RESPONSE: AtomicBool = AtomicBool::new(false);
         if GOT_RESPONSE.load(core::sync::atomic::Ordering::Relaxed) == false {
-            let hello_world = "Hello World".as_bytes();
+            let hello_world = "Hello from MCTP Stack!".as_bytes();
             buf.write_range(0..hello_world.len(), hello_world);
             GOT_RESPONSE.store(true, core::sync::atomic::Ordering::Relaxed);
             return Ok(RecvMetadata {
