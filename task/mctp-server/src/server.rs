@@ -4,8 +4,63 @@ use core::{
 };
 
 use crate::ipc::*;
+use mctp::Error;
+use mctp_api::Stack;
+use mctp_estack::{fragment, MctpHeader};
+use userlib::*;
 
-pub struct Server;
+// Taken from mcpt-estack/src/router.rs
+pub struct PktBuf<'a> {
+    data: &'a [u8; 255],
+    len: usize,
+}
+
+impl PktBuf<'_> {
+    const fn new() -> Self {
+        Self {
+            data: &[0u8; 255],
+            len: 0,
+        }
+    }
+
+    fn set(&mut self, data: &[u8]) -> Result<(), Error> {
+        debug_assert!(MctpHeader::decode(data).is_ok());
+
+        let dst = self.data.get_mut(..data.len()).ok_or(Error::NoSpace)?;
+        // TODO: use the lease stuff here?
+        dst.copy_from_slice(data);
+        self.len = data.len();
+        Ok(())
+    }
+}
+
+impl Default for PktBuf<'_> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl core::ops::Deref for PktBuf<'_> {
+    type Target = [u8];
+
+    fn deref(&self) -> &[u8] {
+        &self.data[..self.len]
+    }
+}
+
+pub struct Server {
+    pub stack: mctp_api::Stack,
+}
+
+impl Server {
+    /// A new server instance with a random Eid
+    pub fn new() -> Self {
+        Self {
+            // get this somehow from task it like in server.rs
+            stack: mctp_api::Stack::from(TaskId(1 as u16)),
+        }
+    }
+}
 
 impl crate::ipc::InOrderMCTPImpl for Server {
     fn req(
@@ -89,6 +144,14 @@ impl crate::ipc::InOrderMCTPImpl for Server {
     where
         ServerError: idol_runtime::IHaveConsideredServerDeathWithThisErrorType,
     {
+        // 1. Parse message components and construct fragmenter for later transport medium
+        // let mut pkt_buf = PktBuf::new();
+        // pkt_buf.set(&buf);
+        // let fragmenter = self.stack.start_send();
+        // let mctp_message = mctp_estack::MctpMessage {};
+        let header = MctpHeader::decode(buf).is_ok();
+
+        // 2. Route the message to the corresponding particpiants
         Ok(0)
     }
 }

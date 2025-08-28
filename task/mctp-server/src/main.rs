@@ -16,7 +16,7 @@ mod server;
 #[export_name = "main"]
 fn main() -> ! {
     let mut msg_buf = [0; ipc::INCOMING_SIZE];
-    let mut server = server::Server;
+    let mut server = server::Server::new();
     loop {
         idol_runtime::dispatch(&mut msg_buf, &mut server);
     }
