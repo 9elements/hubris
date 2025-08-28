@@ -3973,7 +3973,7 @@ checksum = "d8280034c4afaa377d825c17261987ff26a638369ea4b46919e1726741eec253"
 [[package]]
 name = "mctp"
 version = "0.2.0"
-source = "git+https://github.com/embediver/mctp-rs.git?branch=embassy-feature#e061354835d47148ae1c379bdac1eacd0f2a5783"
+source = "git+https://github.com/9elements/mctp-rs.git?branch=embassy-feature#c632a6737ccbfbbe1d8382e40d2c2b9b90634f20"
 
 [[package]]
 name = "mctp-api"
@@ -4004,12 +4004,12 @@ dependencies = [
 [[package]]
 name = "mctp-estack"
 version = "0.1.0"
-source = "git+https://github.com/embediver/mctp-rs.git?branch=embassy-feature#e061354835d47148ae1c379bdac1eacd0f2a5783"
+source = "git+https://github.com/9elements/mctp-rs.git?branch=embassy-feature#c632a6737ccbfbbe1d8382e40d2c2b9b90634f20"
 dependencies = [
  "crc",
  "heapless 0.8.0",
  "log",
- "mctp 0.2.0 (git+https://github.com/embediver/mctp-rs.git?branch=embassy-feature)",
+ "mctp 0.2.0 (git+https://github.com/9elements/mctp-rs.git?branch=embassy-feature)",
  "smbus-pec",
  "uuid",
 ]
