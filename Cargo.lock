@@ -3922,6 +3922,9 @@ dependencies = [
 name = "mctp-server"
 version = "0.1.0"
 dependencies = [
+ "ast1060-pac",
+ "cortex-m",
+ "cortex-m-rt",
  "counters",
  "hubpack",
  "idol",

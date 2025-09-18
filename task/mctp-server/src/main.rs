@@ -14,7 +14,7 @@ mod server;
 fn main() -> ! {
     let mut msg_buf = [0; ipc::INCOMING_SIZE];
     let mut server =
-        server::Server::new(mctp::Eid(42), 0, serial::SerialSender {});
+        server::Server::new(mctp::Eid(42), 0, serial::SerialSender::new());
 
     loop {
         let msg = sys_recv_open(&mut msg_buf, 0);
