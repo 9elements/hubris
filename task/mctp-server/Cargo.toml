@@ -16,6 +16,8 @@ mctp-api = { path = "../mctp-api" }
 mctp-estack = { git = "https://github.com/9elements/mctp-rs.git", branch = "leongross/serial-sync" }
 mctp-stack = { path = "../../../mctp-lib", package = "mctp-baremetal" }
 mctp = { workspace = true }
+heapless = { workspace = true }
+
 
 [build-dependencies]
 idol = { workspace = true }

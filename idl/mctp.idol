@@ -57,6 +57,7 @@ Interface(
             args: {
                 "handle": "GenericHandle",
                 "typ": "u8",
+                "eid": "Option<u8>",
                 "tag": "Option<u8>",
                 "ic": "bool",
             },

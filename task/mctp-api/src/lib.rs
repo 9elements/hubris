@@ -112,7 +112,10 @@ impl ReqChannel for MctpReqChannel<'_> {
         if self.sent_tag.is_some() {
             return Err(Error::BadArgument);
         }
-        let tv = self.stack.ipc.send(self.handle, typ.0, None, false, buf)?;
+        let tv =
+            self.stack
+                .ipc
+                .send(self.handle, typ.0, None, None, false, buf)?;
         let tag = Tag::Owned(mctp::TagValue(tv));
         self.sent_tag = Some(tag);
         Ok(())
@@ -207,7 +210,14 @@ impl<'r> RespChannel for MctpRespChannel<'r> {
         Ok(self
             .stack
             .ipc
-            .send(self.handle, self.typ.0, Some(self.tv.0), false, buf)
+            .send(
+                self.handle,
+                self.typ.0,
+                Some(self.eid.0),
+                Some(self.tv.0),
+                false,
+                buf,
+            )
             .map(|_| ())?)
     }
 }
@@ -288,9 +298,11 @@ pub mod ipc {
         Serialize,
         Deserialize,
         SerializedSize,
+        PartialEq,
+        Eq,
     )]
     #[repr(transparent)]
-    pub struct GenericHandle(pub u8);
+    pub struct GenericHandle(pub u32);
 
     pub mod client {
         use super::*;
