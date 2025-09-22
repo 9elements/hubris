@@ -2853,12 +2853,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "embedded-io"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "edd0f118536f44f5ccd48bcb8b111bdc3de888b58c74639dfb034a357d0f206d"
-
-[[package]]
 name = "encode_unicode"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3853,11 +3847,6 @@ version = "0.2.0"
 source = "git+https://github.com/9elements/mctp-rs.git?branch=embassy-feature#c632a6737ccbfbbe1d8382e40d2c2b9b90634f20"
 
 [[package]]
-name = "mctp"
-version = "0.2.0"
-source = "git+https://github.com/9elements/mctp-rs.git?branch=leongross%2Fserial-sync#1cfde344b50bf47940a645e958408cba882b3b24"
-
-[[package]]
 name = "mctp-api"
 version = "0.1.0"
 dependencies = [
@@ -3866,7 +3855,7 @@ dependencies = [
  "hubpack",
  "idol",
  "idol-runtime",
- "mctp 0.2.0 (git+https://github.com/9elements/mctp-rs.git?branch=embassy-feature)",
+ "mctp",
  "num-traits",
  "serde",
  "userlib",
@@ -3877,17 +3866,17 @@ dependencies = [
 [[package]]
 name = "mctp-baremetal"
 version = "0.1.0"
-source = "git+https://github.com/9elements/mctp-lib.git?branch=buildup#b74fa5e358510a4526574a398b633bd94dc0d5ec"
+source = "git+https://github.com/9elements/mctp-lib.git?branch=buildup#293ecc1cdbe7a9d943cacccecfacd97741b27990"
 dependencies = [
- "mctp 0.2.0 (git+https://github.com/9elements/mctp-rs.git?branch=embassy-feature)",
- "mctp-estack 0.1.0 (git+https://github.com/9elements/mctp-rs.git?branch=embassy-feature)",
+ "mctp",
+ "mctp-estack",
 ]
 
 [[package]]
 name = "mctp-echo"
 version = "0.1.0"
 dependencies = [
- "mctp 0.2.0 (git+https://github.com/9elements/mctp-rs.git?branch=embassy-feature)",
+ "mctp",
  "mctp-api",
  "userlib",
 ]
@@ -3900,21 +3889,7 @@ dependencies = [
  "crc",
  "heapless 0.8.0",
  "log",
- "mctp 0.2.0 (git+https://github.com/9elements/mctp-rs.git?branch=embassy-feature)",
- "smbus-pec",
- "uuid",
-]
-
-[[package]]
-name = "mctp-estack"
-version = "0.1.0"
-source = "git+https://github.com/9elements/mctp-rs.git?branch=leongross%2Fserial-sync#1cfde344b50bf47940a645e958408cba882b3b24"
-dependencies = [
- "crc",
- "embedded-io",
- "heapless 0.8.0",
- "log",
- "mctp 0.2.0 (git+https://github.com/9elements/mctp-rs.git?branch=leongross%2Fserial-sync)",
+ "mctp",
  "smbus-pec",
  "uuid",
 ]
@@ -3928,10 +3903,10 @@ dependencies = [
  "hubpack",
  "idol",
  "idol-runtime",
- "mctp 0.2.0 (git+https://github.com/9elements/mctp-rs.git?branch=embassy-feature)",
+ "mctp",
  "mctp-api",
  "mctp-baremetal",
- "mctp-estack 0.1.0 (git+https://github.com/9elements/mctp-rs.git?branch=leongross%2Fserial-sync)",
+ "mctp-estack",
  "num-traits",
  "serde",
  "userlib",

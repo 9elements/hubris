@@ -32,20 +32,30 @@ impl From<TaskId> for Stack {
 }
 
 impl Stack {
-    pub fn req(&self, eid: Eid) -> mctp::Result<MctpReqChannel<'_>> {
+    pub fn req(
+        &self,
+        eid: Eid,
+        timeout_millis: Option<u32>,
+    ) -> mctp::Result<MctpReqChannel<'_>> {
         let handle = self.ipc.req(eid.0)?;
         Ok(MctpReqChannel {
             stack: self,
             handle,
             eid,
             sent_tag: None,
+            timeout: timeout_millis.unwrap_or(0),
         })
     }
-    pub fn listener(&self, typ: MsgType) -> mctp::Result<MctpListener<'_>> {
+    pub fn listener(
+        &self,
+        typ: MsgType,
+        timeout_millis: Option<u32>,
+    ) -> mctp::Result<MctpListener<'_>> {
         let handle = self.ipc.listener(typ.0)?;
         Ok(MctpListener {
             stack: self,
             handle,
+            timeout: timeout_millis.unwrap_or(0),
         })
     }
     pub fn get_eid(&self) -> Eid {
@@ -63,6 +73,10 @@ pub struct MctpReqChannel<'r> {
     handle: ipc::GenericHandle,
     eid: Eid,
     sent_tag: Option<Tag>,
+    /// Timeout in milliseconds
+    ///
+    /// 0 means no timeout.
+    timeout: u32,
 }
 impl ReqChannel for MctpReqChannel<'_> {
     fn send_vectored(
@@ -80,7 +94,7 @@ impl ReqChannel for MctpReqChannel<'_> {
         let _ = typ;
         let _ = integrity_check;
         let _ = bufs;
-        todo!("Vectored messages are not supported jet!")
+        Err(Error::Unsupported)
     }
 
     fn recv<'f>(
@@ -96,7 +110,7 @@ impl ReqChannel for MctpReqChannel<'_> {
             msg_tag,
             remote_eid,
             size,
-        } = self.stack.ipc.recv(self.handle, buf)?;
+        } = self.stack.ipc.recv(self.handle, self.timeout, buf)?;
         debug_assert_eq!(tv.0, msg_tag);
         debug_assert_eq!(self.eid.0, remote_eid);
         let ic = mctp::MsgIC(msg_ic);
@@ -126,6 +140,10 @@ impl ReqChannel for MctpReqChannel<'_> {
 pub struct MctpListener<'r> {
     stack: &'r Stack,
     handle: ipc::GenericHandle,
+    /// Timeout in milliseconds
+    ///
+    /// 0 means no timeout.
+    timeout: u32,
 }
 impl Listener for MctpListener<'_> {
     type RespChannel<'a>
@@ -148,7 +166,7 @@ impl Listener for MctpListener<'_> {
             msg_tag,
             remote_eid,
             size,
-        } = self.stack.ipc.recv(self.handle, buf)?;
+        } = self.stack.ipc.recv(self.handle, self.timeout, buf)?;
 
         let resp_channel = MctpRespChannel {
             stack: self.stack,
@@ -189,7 +207,7 @@ impl<'r> RespChannel for MctpRespChannel<'r> {
         //      This it not ideal but might be a sufficient for now.
         let _ = integrity_check;
         let _ = bufs;
-        todo!("Vectored messages are not supported jet!")
+        Err(Error::Unsupported)
     }
 
     fn remote_eid(&self) -> Eid {
@@ -197,7 +215,7 @@ impl<'r> RespChannel for MctpRespChannel<'r> {
     }
 
     fn req_channel(&self) -> mctp::Result<Self::ReqChannel> {
-        self.stack.req(self.eid)
+        self.stack.req(self.eid, None)
     }
 
     fn send(&mut self, buf: &[u8]) -> mctp::Result<()> {

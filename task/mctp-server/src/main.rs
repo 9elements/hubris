@@ -12,6 +12,8 @@ mod server;
 
 use server::Server;
 
+pub const TIMER_NOTIFICATION: u32 = 1;
+
 #[export_name = "main"]
 fn main() -> ! {
     let mut msg_buf = [0; ipc::INCOMING_SIZE];
@@ -19,7 +21,12 @@ fn main() -> ! {
         Server::new(mctp::Eid(42), 0, serial::SerialSender {});
 
     loop {
-        let msg = sys_recv_open(&mut msg_buf, 0);
+        let msg = sys_recv_open(&mut msg_buf, TIMER_NOTIFICATION);
+        if msg.sender == TaskId::KERNEL && msg.operation == TIMER_NOTIFICATION {
+            let state = sys_get_timer();
+            server.update(state.now);
+            continue;
+        }
         handle_mctp_msg(&msg_buf, msg, &mut server);
     }
 }
@@ -70,7 +77,12 @@ fn handle_mctp_msg<S: mctp_stack::Sender, const OUTSTANDING: usize>(
                 deserialize(msg_buf).unwrap_lite();
             let lease = Leased::write_only_slice(recv_msg.sender, 0, None)
                 .unwrap_lite();
-            server.recv(recv_msg, recv_args.handle, lease);
+            server.recv(
+                recv_msg,
+                recv_args.handle,
+                recv_args.timeout_millis,
+                lease,
+            );
         }
         ipc::MCTPOperation::send => {
             let (send_args, _): (ipc::MCTP_send_ARGS, _) =
