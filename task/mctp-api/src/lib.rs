@@ -96,7 +96,6 @@ impl ReqChannel for MctpReqChannel<'_> {
             msg_tag,
             remote_eid,
             size,
-            resp_handle: _,
         } = self.stack.ipc.recv(self.handle, buf)?;
         debug_assert_eq!(tv.0, msg_tag);
         debug_assert_eq!(self.eid.0, remote_eid);
@@ -149,16 +148,11 @@ impl Listener for MctpListener<'_> {
             msg_tag,
             remote_eid,
             size,
-            resp_handle,
         } = self.stack.ipc.recv(self.handle, buf)?;
-
-        let Some(resp_handle) = resp_handle else {
-            return Err(Error::InternalError);
-        };
 
         let resp_channel = MctpRespChannel {
             stack: self.stack,
-            handle: resp_handle,
+            handle: self.handle.clone(),
             eid: Eid(remote_eid),
             typ: MsgType(msg_typ),
             tv: TagValue(msg_tag),
@@ -242,7 +236,6 @@ pub mod ipc {
         pub msg_tag: u8,
         pub remote_eid: u8,
         pub size: u64,
-        pub resp_handle: Option<GenericHandle>,
     }
 
     /// Errors reported by the MCTP server

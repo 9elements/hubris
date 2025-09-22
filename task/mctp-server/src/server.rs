@@ -12,10 +12,15 @@ const MAX_PAYLOAD: usize = 1023;
 
 pub struct Server<S: mctp_stack::Sender, const OUTSTANDING: usize> {
     stack: Router<S>,
+    /// The currently outstanding recv calls
+    ///
+    /// Maps the handle to RecvMessage that must be replied to,
+    /// once a message arrives or a timeout occurs.
     outstanding: LinearMap<GenericHandle, RecvMessage, OUTSTANDING>,
 }
 
 impl<S: mctp_stack::Sender, const OUTSTANDING: usize> Server<S, OUTSTANDING> {
+    /// Create a new MCTP server instance
     pub fn new(own_eid: mctp::Eid, now_millis: u64, outbound: S) -> Self {
         let stack = Router::new(own_eid, now_millis, outbound);
         Self {
@@ -23,6 +28,8 @@ impl<S: mctp_stack::Sender, const OUTSTANDING: usize> Server<S, OUTSTANDING> {
             outstanding: LinearMap::new(),
         }
     }
+
+    /// Answer a request for a handle for sending messages to the given EID
     pub fn req(&mut self, msg: &RecvMessage, eid: u8) {
         match self.stack.req(mctp::Eid(eid)) {
             Ok(handle) => {
@@ -34,6 +41,8 @@ impl<S: mctp_stack::Sender, const OUTSTANDING: usize> Server<S, OUTSTANDING> {
             }
         }
     }
+
+    /// Answer a request for a listener handle for incoming messages of the given type
     pub fn listener(&mut self, msg: &RecvMessage, typ: u8) {
         match self.stack.listener(mctp::MsgType(typ)) {
             Ok(handle) => {
@@ -45,9 +54,13 @@ impl<S: mctp_stack::Sender, const OUTSTANDING: usize> Server<S, OUTSTANDING> {
             }
         }
     }
+
+    /// Reply to a request for the current EID
     pub fn get_eid(&mut self, msg: &RecvMessage) {
         sys_reply(msg.sender, 0, self.stack.get_eid().0.as_bytes());
     }
+
+    /// Set the current EID of the stack
     pub fn set_eid(&mut self, msg: &RecvMessage, eid: u8) {
         match self.stack.set_eid(mctp::Eid(eid)) {
             Ok(()) => sys_reply(msg.sender, 0, &[]),
@@ -56,6 +69,10 @@ impl<S: mctp_stack::Sender, const OUTSTANDING: usize> Server<S, OUTSTANDING> {
             }
         }
     }
+
+    /// Check for incoming messages for the handle given by the client
+    ///
+    /// Postpones the reply if no message is available.
     pub fn recv(
         &mut self,
         msg: RecvMessage,
@@ -74,16 +91,39 @@ impl<S: mctp_stack::Sender, const OUTSTANDING: usize> Server<S, OUTSTANDING> {
                 sys_reply(msg.sender, ServerError::NoSpace.into(), &[]);
                 return;
             }
-            buf.write_range(
-                0..mctp_message.payload.len(),
-                mctp_message.payload,
-            );
-            todo!("send reply");
-            // return;
+            if buf
+                .write_range(
+                    0..mctp_message.payload.len(),
+                    mctp_message.payload,
+                )
+                .is_err()
+            {
+                todo!("client died?")
+            }
+            let answer = crate::ipc::RecvMetadata {
+                msg_typ: mctp_message.typ.0,
+                msg_ic: mctp_message.ic.0,
+                msg_tag: mctp_message.tag.tag().0,
+                remote_eid: mctp_message.source.0,
+                size: mctp_message.payload.len() as u64,
+            };
+
+            let mut msg_buf = [0; MAX_PAYLOAD];
+            let l = hubpack::serialize(&mut msg_buf, &answer).unwrap_lite();
+            sys_reply(msg.sender, 0, &msg_buf[..l]);
+
+            return;
         }
 
         self.outstanding.insert(handle, msg).unwrap_lite();
     }
+
+    /// Send a message provided by the client
+    ///
+    /// Blocks until the message is sent or an error occurs.
+    /// When responding to a request received by a listener, `eid` and `tag` have to be set.
+    /// A request usually won't set a `eid`.
+    /// When no `tag` is supplied for a request, a new one will be allocated.
     pub fn send(
         &mut self,
         msg: &RecvMessage,
@@ -126,6 +166,7 @@ impl<S: mctp_stack::Sender, const OUTSTANDING: usize> Server<S, OUTSTANDING> {
         }
     }
 
+    /// Update the stack, check for receive calls that can be fullfilled
     pub fn update(&mut self) {
         todo!(
             "update the stack, check for receive calls that can be fullfilled"

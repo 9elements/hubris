@@ -3877,6 +3877,7 @@ dependencies = [
 [[package]]
 name = "mctp-baremetal"
 version = "0.1.0"
+source = "git+https://github.com/9elements/mctp-lib.git?branch=buildup#b74fa5e358510a4526574a398b633bd94dc0d5ec"
 dependencies = [
  "mctp 0.2.0 (git+https://github.com/9elements/mctp-rs.git?branch=embassy-feature)",
  "mctp-estack 0.1.0 (git+https://github.com/9elements/mctp-rs.git?branch=embassy-feature)",
