@@ -11,7 +11,7 @@ use zerocopy::IntoBytes;
 const MAX_PAYLOAD: usize = 1023;
 
 pub struct Server<S: mctp_stack::Sender, const OUTSTANDING: usize> {
-    stack: Router<S>,
+    stack: Router<S, { super::MAX_LISTENERS }, { super::MAX_REQUESTS }>,
     /// The currently outstanding recv calls
     ///
     /// Maps the handle to RecvMessage that must be replied to,
@@ -212,7 +212,7 @@ impl<S: mctp_stack::Sender, const OUTSTANDING: usize> Server<S, OUTSTANDING> {
 
 fn send_reply(
     msg: &RecvMessage,
-    mctp_message: mctp_estack::MctpMessage<'_>,
+    mctp_message: mctp_stack::MctpMessage<'_>,
     buf: Leased<W, [u8]>,
 ) {
     if mctp_message.payload.len() > buf.len() {

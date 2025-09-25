@@ -14,10 +14,17 @@ use server::Server;
 
 pub const TIMER_NOTIFICATION: u32 = 1;
 
+/// Maximum number of concurrent requests the server can handle.
+pub const MAX_REQUESTS: usize = 8;
+/// Maximum number of listeners that can be registered concurrently.
+pub const MAX_LISTENERS: usize = 8;
+/// Maximum number of concurrent outstanding receive calls.
+pub const MAX_OUTSTANDING: usize = 16;
+
 #[export_name = "main"]
 fn main() -> ! {
     let mut msg_buf = [0; ipc::INCOMING_SIZE];
-    let mut server: Server<_, 16> =
+    let mut server: Server<_, MAX_OUTSTANDING> =
         Server::new(mctp::Eid(42), 0, serial::SerialSender {});
 
     loop {

@@ -13,7 +13,6 @@ hubpack = { workspace = true }
 zerocopy = { workspace = true }
 zerocopy-derive = { workspace = true }
 mctp-api = { path = "../mctp-api" }
-mctp-estack = { git = "https://github.com/9elements/mctp-rs.git", branch = "embassy-feature" }
 mctp-stack = { git = "https://github.com/9elements/mctp-lib.git", package = "mctp-baremetal", branch = "buildup" }
 mctp = { workspace = true }
 heapless = { workspace = true }
