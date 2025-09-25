@@ -1,20 +1,26 @@
 // mctp-baremetal
-use mctp_stack;
-
+use core::{cell::RefCell, ops::DerefMut};
 use mctp::Result;
+use mctp_stack;
+use userlib::*;
 
-use ast1060_pac::Peripherals;
+use super::notifications;
+
 // use cortex_m_rt::entry;
 
 #[cfg(feature = "jtag-halt")]
 use core::ptr::{self, addr_of};
 
-pub struct SerialSender {
-    peripherals: Peripherals,
+use ast1060_pac as device;
+use core::ops::Deref;
+use lib_ast1060_uart::{InterruptDecoding, Read, Usart, Write};
+
+pub struct SerialSender<'a> {
+    pub usart: &'a RefCell<Usart<'a>>,
     serial_handler: mctp_stack::serial::MctpSerialHandler,
 }
 
-impl mctp_stack::Sender for SerialSender {
+impl<'a> mctp_stack::Sender for SerialSender<'a> {
     fn send(
         &mut self,
         mut fragmenter: mctp_stack::fragment::Fragmenter,
@@ -26,9 +32,10 @@ impl mctp_stack::Sender for SerialSender {
 
             match r {
                 mctp_stack::fragment::SendOutput::Packet(p) => {
-                    // write this to sth taht imnplements embedded_io::Write
-                    self.serial_handler
-                        .send_sync(payload, &mut self.peripherals);
+                    self.serial_handler.send_sync(
+                        payload,
+                        &mut self.usart.borrow_mut().deref_mut(),
+                    );
                 }
                 mctp_stack::fragment::SendOutput::Complete { tag, .. } => {
                     break Ok(tag)
@@ -45,28 +52,51 @@ impl mctp_stack::Sender for SerialSender {
     }
 }
 
-impl SerialSender {
+impl<'a> SerialSender<'a> {
     /// Create a new SerialSender instance with the neccessary serial setup code.
-    pub fn new() -> Self {
-        let peripherals = unsafe { Peripherals::steal() };
-        peripherals.scu.scu000().modify(|_, w| w);
-        peripherals.scu.scu41c().modify(|_, w| {
-            // Set the JTAG pinmux to 0x1f << 25
-            w.enbl_armtmsfn_pin()
-                .bit(true)
-                .enbl_armtckfn_pin()
-                .bit(true)
-                .enbl_armtrstfn_pin()
-                .bit(true)
-                .enbl_armtdifn_pin()
-                .bit(true)
-                .enbl_armtdofn_pin()
-                .bit(true)
-        });
+    pub fn new(uart: &'a RefCell<Usart<'a>>) -> Self {
+        // peripherals.scu.scu000().modify(|_, w| w);
+        // peripherals.scu.scu41c().modify(|_, w| {
+        //     // Set the JTAG pinmux to 0x1f << 25
+        //     w.enbl_armtmsfn_pin()
+        //         .bit(true)
+        //         .enbl_armtckfn_pin()
+        //         .bit(true)
+        //         .enbl_armtrstfn_pin()
+        //         .bit(true)
+        //         .enbl_armtdifn_pin()
+        //         .bit(true)
+        //         .enbl_armtdofn_pin()
+        //         .bit(true)
+        // });
+
+        // USART side yet, so this won't trigger notifications yet.
+        sys_irq_control(notifications::UART_IRQ_MASK, true);
+
         Self {
-            peripherals,
+            usart: uart,
             serial_handler: mctp_stack::serial::MctpSerialHandler::new(),
         }
+    }
+}
+
+pub enum UartError {
+    RxNoData,
+    RxTimeout,
+}
+
+pub fn handle_recv<'a>(
+    interrupt: InterruptDecoding,
+    usart: &RefCell<Usart<'_>>,
+    serial_reader: &'a mut mctp_stack::serial::MctpSerialHandler,
+) -> Result<&'a [u8]> {
+    let usart = &mut usart.borrow_mut();
+    match interrupt {
+        InterruptDecoding::RxDataAvailable
+        | InterruptDecoding::CharacterTimeout => {
+            serial_reader.recv(&mut usart.deref_mut())
+        }
+        _ => Err(mctp::Error::RxFailure),
     }
 }
 

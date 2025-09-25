@@ -5,19 +5,41 @@
 #![no_std]
 #![no_main]
 
+use ast1060_pac as device;
+use core::cell::RefCell;
+use core::ops::Deref;
+use mctp_stack;
 use userlib::*;
+
+use lib_ast1060_uart::Usart;
 
 mod serial;
 mod server;
 
+// TODO: add IRQ recv loop
 #[export_name = "main"]
 fn main() -> ! {
     let mut msg_buf = [0; ipc::INCOMING_SIZE];
-    let mut server =
-        server::Server::new(mctp::Eid(42), 0, serial::SerialSender::new());
+    let peripherals = unsafe { device::Peripherals::steal() };
+
+    let mut usart = RefCell::new(Usart::from(peripherals.uart.deref()));
+    let serial_sender = serial::SerialSender::new(&usart);
+    let mut serial_reader = mctp_stack::serial::MctpSerialHandler::new();
+
+    let mut server = server::Server::new(mctp::Eid(42), 0, serial_sender);
 
     loop {
-        let msg = sys_recv_open(&mut msg_buf, 0);
+        let msg = sys_recv_open(&mut msg_buf, notifications::UART_IRQ_MASK);
+        let interrupt = usart.borrow_mut().read_interrupt_status();
+
+        if msg.sender == TaskId::KERNEL {
+            let pkt =
+                serial::handle_recv(interrupt, &usart, &mut serial_reader)
+                    .unwrap_lite();
+            server.stack.inbound(pkt).unwrap_lite();
+            continue;
+        }
+
         handle_mctp_msg(&msg_buf, msg, &mut server);
     }
 }
@@ -87,3 +109,5 @@ fn handle_mctp_msg<S: mctp_stack::Sender>(
         }
     }
 }
+
+include!(concat!(env!("OUT_DIR"), "/notifications.rs"));

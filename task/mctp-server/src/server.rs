@@ -5,7 +5,7 @@ use userlib::*;
 use zerocopy::IntoBytes;
 
 pub struct Server<S: mctp_stack::Sender> {
-    stack: Router<S, 1, 1>,
+    pub stack: Router<S, 1, 1>,
 }
 
 impl<S: mctp_stack::Sender> Server<S> {
