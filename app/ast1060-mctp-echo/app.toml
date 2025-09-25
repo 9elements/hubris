@@ -35,8 +35,9 @@ task-slots = ["mctp_server"]
 [tasks.mctp_server]
 name = "mctp-server"
 priority = 1
-max-sizes = {flash = 16384, ram = 16384}
+max-sizes = {flash = 32768, ram = 16384}
 start = true
 stacksize = 12288
-notifications = ["uart-irq"]
+notifications = ["uart-irq", "timer"]
 interrupts = {"uart.irq" = "uart-irq"}
+

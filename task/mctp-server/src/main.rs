@@ -15,6 +15,14 @@ use lib_ast1060_uart::Usart;
 
 mod serial;
 mod server;
+use server::Server;
+
+/// Maximum number of concurrent requests the server can handle.
+pub const MAX_REQUESTS: usize = 8;
+/// Maximum number of listeners that can be registered concurrently.
+pub const MAX_LISTENERS: usize = 8;
+/// Maximum number of concurrent outstanding receive calls.
+pub const MAX_OUTSTANDING: usize = 16;
 
 // TODO: add IRQ recv loop
 #[export_name = "main"]
@@ -26,17 +34,31 @@ fn main() -> ! {
     let serial_sender = serial::SerialSender::new(&usart);
     let mut serial_reader = mctp_stack::serial::MctpSerialHandler::new();
 
-    let mut server = server::Server::new(mctp::Eid(42), 0, serial_sender);
+    let mut server: Server<_, MAX_OUTSTANDING> =
+        Server::new(mctp::Eid(42), 0, serial_sender);
 
     loop {
-        let msg = sys_recv_open(&mut msg_buf, notifications::UART_IRQ_MASK);
+        let msg = sys_recv_open(
+            &mut msg_buf,
+            notifications::UART_IRQ_MASK & notifications::TIMER_MASK,
+        );
         let interrupt = usart.borrow_mut().read_interrupt_status();
 
-        if msg.sender == TaskId::KERNEL {
+        if msg.sender == TaskId::KERNEL
+            && (msg.operation & notifications::UART_IRQ_MASK) != 0
+        {
             let pkt =
                 serial::handle_recv(interrupt, &usart, &mut serial_reader)
                     .unwrap_lite();
             server.stack.inbound(pkt).unwrap_lite();
+            continue;
+        }
+
+        if msg.sender == TaskId::KERNEL
+            && (msg.operation & notifications::TIMER_MASK) != 0
+        {
+            let state = sys_get_timer();
+            server.update(state.now);
             continue;
         }
 
@@ -51,10 +73,10 @@ mod ipc {
     include!(concat!(env!("OUT_DIR"), "/server_stub.rs"));
 }
 
-fn handle_mctp_msg<S: mctp_stack::Sender>(
+fn handle_mctp_msg<S: mctp_stack::Sender, const OUTSTANDING: usize>(
     msg_buf: &[u8],
     recv_msg: RecvMessage,
-    server: &mut server::Server<S>,
+    server: &mut server::Server<S, OUTSTANDING>,
 ) {
     use hubpack::deserialize;
     use idol_runtime::Leased;
@@ -90,7 +112,12 @@ fn handle_mctp_msg<S: mctp_stack::Sender>(
                 deserialize(msg_buf).unwrap_lite();
             let lease = Leased::write_only_slice(recv_msg.sender, 0, None)
                 .unwrap_lite();
-            server.recv(&recv_msg, recv_args.handle, lease);
+            server.recv(
+                recv_msg,
+                recv_args.handle,
+                recv_args.timeout_millis,
+                lease,
+            );
         }
         ipc::MCTPOperation::send => {
             let (send_args, _): (ipc::MCTP_send_ARGS, _) =
@@ -102,6 +129,7 @@ fn handle_mctp_msg<S: mctp_stack::Sender>(
                 &recv_msg,
                 send_args.handle,
                 send_args.typ,
+                send_args.eid,
                 send_args.tag,
                 ic,
                 lease,
