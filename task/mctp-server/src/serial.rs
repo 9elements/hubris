@@ -1,10 +1,7 @@
-use mctp::Result;
-
 // mctp-baremetal
 use mctp_stack;
 
-// mctp-estack (leongross/serial-sync)
-use mctp_estack;
+use mctp::Result;
 
 use ast1060_pac::Peripherals;
 // use cortex_m_rt::entry;
@@ -14,27 +11,29 @@ use core::ptr::{self, addr_of};
 
 pub struct SerialSender {
     peripherals: Peripherals,
-    serial_handler: mctp_estack::serial::MctpSerialHandler,
+    serial_handler: mctp_stack::serial::MctpSerialHandler,
 }
 
 impl mctp_stack::Sender for SerialSender {
     fn send(
         &mut self,
-        fragmenter: mctp_stack::Fragmenter,
+        mut fragmenter: mctp_stack::fragment::Fragmenter,
         payload: &[u8],
     ) -> Result<mctp::Tag> {
         loop {
-            let mut pkt = [0u8; mctp_estack::serial::MTU_MAX];
+            let mut pkt = [0u8; mctp_stack::serial::MTU_MAX];
             let r = fragmenter.fragment(payload, &mut pkt);
 
             match r {
-                mctp_estack::fragment::SendOutput::Packet(p) => {
-                    self.serial_handler.send_sync(payload, self.peripherals);
+                mctp_stack::fragment::SendOutput::Packet(p) => {
+                    // write this to sth taht imnplements embedded_io::Write
+                    self.serial_handler
+                        .send_sync(payload, &mut self.peripherals);
                 }
-                mctp_estack::fragment::SendOutput::Complete { tag, .. } => {
+                mctp_stack::fragment::SendOutput::Complete { tag, .. } => {
                     break Ok(tag)
                 }
-                mctp_estack::fragment::SendOutput::Error { err, .. } => {
+                mctp_stack::fragment::SendOutput::Error { err, .. } => {
                     break Err(err)
                 }
             }
@@ -42,7 +41,7 @@ impl mctp_stack::Sender for SerialSender {
     }
 
     fn get_mtu(&self) -> usize {
-        mctp_estack::serial::MTU_MAX
+        mctp_stack::serial::MTU_MAX
     }
 }
 
@@ -66,7 +65,7 @@ impl SerialSender {
         });
         Self {
             peripherals,
-            serial_handler: mctp_estack::serial::MctpSerialHandler::new(),
+            serial_handler: mctp_stack::serial::MctpSerialHandler::new(),
         }
     }
 }
