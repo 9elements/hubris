@@ -1,0 +1,24 @@
+[package]
+name = "ast1060-helloworld"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+userlib = { path = "../../sys/userlib", features = ["panic-messages"] }
+lib-ast1060-uart = { path = "../../lib/ast1060-uart" }
+ast1060-pac = { workspace = true }
+embedded-io = { workspace = true }
+
+[build-dependencies]
+build-util = { path = "../../build/util" }
+
+# This section is here to discourage RLS/rust-analyzer from doing test builds,
+# since test builds don't work for cross compilation.
+[[bin]]
+name = "ast1060-helloworld"
+test = false
+doctest = false
+bench = false
+
+[lints]
+workspace = true

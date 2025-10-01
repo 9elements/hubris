@@ -22,3 +22,13 @@ priority = 5
 max-sizes = {flash = 128, ram = 256}
 stacksize = 256
 start = true
+
+[tasks.ast1060_helloworld]
+name = "ast1060-helloworld"
+priority = 1
+max-sizes = {flash = 8192, ram = 4096}
+stacksize = 2048
+start = true
+uses = ["uart"]
+notifications = ["uart-irq"]
+interrupts = {"uart.irq" = "uart-irq"}

@@ -57,12 +57,10 @@ impl<'a> From<&'a device::uart::RegisterBlock> for Usart<'a> {
             });
         }
 
-        // Self { usart }.set_rate(Rate::MBaud1_5).set_8n1().interrupt_enable()
         Self { usart }
             .set_rate(Rate::MBaud1_5)
             .set_8n1()
             .interrupt_enable()
-        // Self { usart }.interrupt_enable()
     }
 }
 
@@ -85,7 +83,7 @@ impl Write for Usart<'_> {
     fn write(&mut self, buf: &[u8]) -> Result<usize, Error> {
         let mut counter = 0;
         for byte in buf {
-            if self.is_tx_full() {
+            if !self.is_tx_full() {
                 // This is unsafe because we can transmit 7, 8 or 9 bits but the
                 // interface can't know what it's been configured for.
                 self.usart
@@ -96,6 +94,7 @@ impl Write for Usart<'_> {
                 self.flush()?;
             }
         }
+        self.flush()?;
         Ok(counter)
     }
 }

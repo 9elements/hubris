@@ -1,0 +1,4 @@
+# ast1060 UART Hello World
+
+Sends `Hello, world!` over UART and echos received data.
+

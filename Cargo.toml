@@ -48,6 +48,8 @@ path = "lib/counters"
 anyhow = { version = "1.0.31", default-features = false, features = ["std"] }
 array-init = { version = "2.1.0" }
 arrayvec = { version = "0.7.4", default-features = false }
+aspeed-ddk = { git = "https://github.com/aspeedtech-bmc/aspeed-rust.git" }
+ast1060-pac = { git = "https://github.com/aspeedtech-bmc/ast1060-pac.git" }
 atty = { version = "0.2", default-features = false }
 bitfield = { version = "0.13", default-features = false }
 bitflags = { version = "2.5.0", default-features = false }
@@ -141,6 +143,7 @@ zerocopy = { version = "0.8.25", default-features = false }
 zerocopy-derive = { version = "0.8.25", default-features = false }
 zeroize = { version = "1.5.7", default-features = false, features = ["zeroize_derive"] }
 zip = { version = "0.6", default-features = false, features = ["bzip2", "deflate", "zstd"] }
+embedded-io = "0.6"
 
 # Oxide forks and repos
 attest-data = { git = "https://github.com/oxidecomputer/dice-util", default-features = false, version = "0.4.0" }
