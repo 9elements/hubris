@@ -12,8 +12,8 @@ use core::ops::Deref;
 #[allow(unused_imports)]
 use userlib::*;
 
-use embedded_io::Write;
-use lib_ast1060_uart::Usart;
+use embedded_io::{Read, Write};
+use lib_ast1060_uart::{InterruptDecoding, Usart};
 
 #[export_name = "main"]
 fn main() -> ! {
@@ -22,14 +22,38 @@ fn main() -> ! {
 
     let mut usart = Usart::from(usart.deref());
 
-    // USART side yet, so this won't trigger notifications yet.
     sys_irq_control(notifications::UART_IRQ_MASK, true);
 
-    usart.write("Hello, World!".as_bytes()).unwrap_lite();
+    usart.write_all("Hello, World!\n".as_bytes()).unwrap_lite();
+    usart.flush().unwrap_lite();
 
+    let mut recv_buf = [0; 255];
     loop {
-        // NOTE: you need to put code here before running this! Otherwise LLVM
-        // will turn this into a single undefined instruction.
+        let msg = sys_recv_open(&mut [], notifications::UART_IRQ_MASK);
+        if msg.sender == TaskId::KERNEL
+            && (msg.operation & notifications::UART_IRQ_MASK) != 0
+        {
+            let int = usart.read_interrupt_status();
+            // usart.write_fmt(format_args!("\n{int:?}\n")).unwrap_lite();
+            match int {
+                InterruptDecoding::RxDataAvailable
+                | InterruptDecoding::CharacterTimeout => {
+                    usart.clear_rx_data_available_interrupt();
+                    let n = usart.read(&mut recv_buf).unwrap_lite();
+                    usart.set_rx_data_available_interrupt();
+                    usart.write_all(&recv_buf[..n]).unwrap_lite();
+                }
+                InterruptDecoding::ModemStatusChange => {
+                    usart.read_modem_status();
+                }
+                InterruptDecoding::TxEmpty => usart.clear_tx_idle_interrupt(),
+                InterruptDecoding::LineStatusChange => {
+                    usart.read_line_status();
+                }
+                InterruptDecoding::Unknown => {}
+            }
+            sys_irq_control(notifications::UART_IRQ_MASK, true);
+        }
     }
 }
 
