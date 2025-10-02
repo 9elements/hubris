@@ -40,6 +40,9 @@ fn main() -> ! {
                 | InterruptDecoding::CharacterTimeout => {
                     usart.clear_rx_data_available_interrupt();
                     let n = usart.read(&mut recv_buf).unwrap_lite();
+                    if n > 0 && recv_buf[n - 1] == b'\r' {
+                        recv_buf[n - 1] = b'\n';
+                    }
                     usart.set_rx_data_available_interrupt();
                     usart.write_all(&recv_buf[..n]).unwrap_lite();
                 }

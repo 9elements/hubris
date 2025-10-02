@@ -117,13 +117,12 @@ impl Read for Usart<'_> {
             } else if self.is_rx_noise_err() {
                 return Err(Error::Noise);
             }
+            out[count] = byte;
 
-            if count < out.len() {
-                out[count] = byte;
-            } else {
+            count += 1;
+            if count >= out.len() {
                 break;
             }
-            count += 1;
         }
         Ok(count)
     }
@@ -166,9 +165,9 @@ impl<'a> Usart<'a> {
     pub fn interrupt_enable(self) -> Self {
         self.usart.uartier().write(|w| {
             w.erbfi().set_bit(); // Enable Received Data Available Interrupt
-                                 // w.etbei().set_bit(); // Enable Transmitter Holding Register Empty Interrupt
-                                 // w.elsi().set_bit(); // Enable Receiver Line Status Interrupt
-                                 // w.edssi().set_bit() // Enable Modem Status Interrupt
+            w.etbei().set_bit(); // Enable Transmitter Holding Register Empty Interrupt
+            w.elsi().set_bit(); // Enable Receiver Line Status Interrupt
+            w.edssi().set_bit(); // Enable Modem Status Interrupt
             w
         });
 
