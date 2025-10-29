@@ -221,7 +221,7 @@ jobs:
 
   build-openprot:
     if: ${{ inputs.board-set == 'openprot' || inputs.board-set == 'all' }}
-    name: build-rot
+    name: build-openrot
     strategy:
       matrix:
         build: [ast1060, ast1060-mctp]
