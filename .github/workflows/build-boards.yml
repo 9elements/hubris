@@ -224,7 +224,7 @@ jobs:
     name: build-openrot
     strategy:
       matrix:
-        build: [ast1060, ast1060-mctp]
+        build: [ast1060, ast1060-mctp, ast1060-i2c, ast1060-ecdsa]
         include:
           - build: ast1060
             app_name: ast1060-starter
@@ -233,6 +233,14 @@ jobs:
           - build: ast1060-mctp
             app_name: ast1060-mctp-echo
             app_toml: app/ast1060-mctp-echo/app.toml
+            image: default
+          - build: ast1060-i2c
+            app_name: ast1060-i2c-scaffold
+            app_toml: app/ast1060-i2c-scaffold/app.toml
+            image: default
+          - build: ast1060-ecdsa
+            app_name: ast1060-ecdsa-test
+            app_toml: app/ast1060-ecdsa-test/app.toml
             image: default
     uses: ./.github/workflows/build-one.yml
     with:
